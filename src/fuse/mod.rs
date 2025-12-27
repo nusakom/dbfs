@@ -116,7 +116,7 @@ impl Filesystem for DbfsFuse {
         &mut self,
         _req: &Request<'_>,
         ino: u64,
-        fh: Option<u64>, // 新增参数
+        _fh: Option<u64>, // 新增参数
         reply: ReplyAttr,
     ) {
         // 如果不需要使用 `fh` 参数，可以直接忽略它：

@@ -54,7 +54,7 @@ serde = { version = "1.0.136", default-features = false, features = [
     "derive",
     "alloc",
 ] }
-dbfs2 = { path = "../dbfs2", default-features = false, features = [
+dbfs2 = { path = ".", default-features = false, features = [
     "fuse",
     "rvfs",
     "sli32k",
