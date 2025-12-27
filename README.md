@@ -2,7 +2,8 @@
 
 A file system implemented using a key-value pair database. The filesystem supports Linux FUSE and is ported to a custom OS.
 
-**The implementation is complete and functional.**
+> **Project Status**: Stable.
+> The core implementation is complete and functional, including persistence, recovery, and VFS integration.
 
 ## Features
 
