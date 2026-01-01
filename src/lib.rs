@@ -23,6 +23,8 @@ pub mod models;
 pub mod log_manager;
 pub mod tx_engine;
 pub mod rvfs_adapter;
+#[cfg(test)]
+mod rvfs_test;
 #[cfg(feature = "fuse")]
 pub use file::FLAG;
 
