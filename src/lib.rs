@@ -19,6 +19,10 @@ use jammdb::DB;
 use log::error;
 use spin::Once;
 pub mod extend;
+pub mod models;
+pub mod log_manager;
+pub mod tx_engine;
+pub mod rvfs_adapter;
 #[cfg(feature = "fuse")]
 pub use file::FLAG;
 
