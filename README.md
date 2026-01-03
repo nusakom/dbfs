@@ -1,6 +1,30 @@
 # DBFS
 
-A file system implemented using a key-value pair database. The filesystem supports linux fuse and is ported to a self-written OS.
+A file system implemented using a key-value pair database. The filesystem supports Linux FUSE and is ported to a custom OS.
+
+> **Project Status**: Stable.
+> The core implementation is complete and functional, including persistence, recovery, and VFS integration.
+
+## Features
+
+- **Persistence**: Built on `jammdb`, ensuring data persistence and recovery across restarts.
+- **FUSE Compatible**: Fully supports Linux FUSE (libfuse3).
+- **VFS Abstraction**: Provides a generic interface for easy integration with kernel VFS (e.g., `rvfs`).
+- **Cross-Platform**: Designed to run in both user space (FUSE) and kernel space.
+
+## Prerequisites
+
+- **Rust Nightly**: This project requires the nightly toolchain (for `error_in_core` feature).
+  ```bash
+  rustup override set nightly
+  ```
+- **FUSE 3**: Ensure `libfuse3` is installed.
+
+## Build / Network Note
+
+Some dependencies (e.g., `rvfs`, `jammdb`) are fetched directly from GitHub. Please ensure you have a stable network connection to GitHub when building the project. If you encounter timeout errors, consider checking your network settings or proxy configurations.
+
+
 
 ## Project Structure
 
@@ -49,7 +73,7 @@ pub fn dbfs_common_removexattr(
 ) -> DbfsResult<()> 
 ```
 
-You only need to connect this common interface with the interface of `VFS` implemented by yourself. I implemented a `VFS` framework `rvfs` myself, so if you choose to use `rvfs`, then DBFS is provided out of the box.
+You only need to connect this common interface with the VFS implementation. The `rvfs` framework is natively supported and provided out of the box.
 
 Before using DBFS, it is necessary to initialize the global database entity, because the database and DBFS are two modules, so the user can decide how to implement the database interface. At the same time, the user needs to initialize a super block structure in the database so that DBFS can obtain disk metadata normally. An example of using DBFS in the kernel is as follows:
 
@@ -109,7 +133,7 @@ make pre_file
 
 3. Mount the ext file system
 
-```4
+```bash
 make ext
 ```
 
@@ -125,7 +149,7 @@ make mdtest
 make fbench
 ```
 
-Since the `filebench` test needs to modify the running directory in the configuration file, before testing, please modify the configuration of the three application loads in the `bench/filebench/` directory, only need to modify the `dir` directory
+The `filebench` test requires modifying the running directory in the configuration file. Before testing, please update the `dir` path in the three application load configurations located in `bench/filebench/`:
 
 ```
 set $dir={your path}/dbfs2/bench/ext3
@@ -156,6 +180,3 @@ If you want to run a single test like `rename`
 sudo prove -rv {your}/pjdfstest/tests/rename
 ```
 
-## Feature
-
-- [ ] linux VFS

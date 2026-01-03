@@ -1,3 +1,4 @@
+#![feature(error_in_core)]
 #![cfg_attr(not(test), no_std)]
 #![feature(error_in_core)]
 extern crate alloc;
@@ -19,6 +20,12 @@ use jammdb::DB;
 use log::error;
 use spin::Once;
 pub mod extend;
+pub mod models;
+pub mod log_manager;
+pub mod tx_engine;
+pub mod rvfs_adapter;
+#[cfg(test)]
+mod rvfs_test;
 #[cfg(feature = "fuse")]
 pub use file::FLAG;
 
