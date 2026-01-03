@@ -10,7 +10,7 @@ edition = "2021"
 rvfs = { git = "git@github.com:nusakom/rvfs.git", optional = true }
 
 # New RVFS (vfscore) - os-module/rvfs workspace
-# 注意：os-module/rvfs 是一个 workspace，包含 vfscore 子包
+# 注意 os-module/rvfs 是一个 workspace，包含 vfscore 子包
 vfscore = { git = "https://github.com/os-module/rvfs.git", package = "vfscore", optional = true }
 
 jammdb = { git = "git@github.com:nusakom/jammdb.git" }
