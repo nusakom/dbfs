@@ -23,9 +23,16 @@ use spin::Once;
 #[cfg(feature = "dbop")]
 pub mod extend;
 
+#[cfg(feature = "dbop")]
 pub mod models;
+
+#[cfg(feature = "dbop")]
 pub mod log_manager;
+
+#[cfg(feature = "dbop")]
 pub mod tx_engine;
+
+#[cfg(feature = "dbop")]
 pub mod rvfs_adapter;
 #[cfg(test)]
 mod rvfs_test;
