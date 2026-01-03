@@ -34,7 +34,8 @@ pub mod tx_engine;
 
 #[cfg(feature = "dbop")]
 pub mod rvfs_adapter;
-#[cfg(test)]
+
+#[cfg(all(test, feature = "dbop"))]
 mod rvfs_test;
 #[cfg(feature = "fuse")]
 pub use file::FLAG;
