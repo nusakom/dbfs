@@ -7,6 +7,7 @@ use core::{
 
 use bitflags::bitflags;
 use onlyerror::Error;
+#[cfg(feature = "rvfs")]
 use rvfs::dentry::DirentType;
 use spin::{Once, RwLock};
 
@@ -89,6 +90,7 @@ impl From<jammdb::Error> for DbfsError {
             jammdb::Error::Io(_) => DbfsError::Io,
             jammdb::Error::Sync(_) => DbfsError::Io,
             jammdb::Error::InvalidDB(_) => DbfsError::Other,
+            jammdb::Error::Alloc(_) => DbfsError::Other,
         }
     }
 }
@@ -138,6 +140,7 @@ pub enum DbfsFileType {
     Socket,
 }
 
+#[cfg(feature = "rvfs")]
 impl Into<DirentType> for DbfsFileType {
     fn into(self) -> DirentType {
         match self {

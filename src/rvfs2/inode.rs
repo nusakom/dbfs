@@ -1,7 +1,7 @@
-use alloc::{format, string::String, string::ToString, sync::Arc, vec, vec::Vec};
+use alloc::{string::String, string::ToString, sync::Arc, vec::Vec};
 use core::cmp::min;
 
-use log::{debug, warn};
+use log::warn;
 use spin::Mutex;
 use vfscore::{
     error::VfsError,
@@ -14,22 +14,11 @@ use vfscore::{
     VfsResult,
 };
 
-use super::superblock::DbfsSuperBlock;
+use super::{common as dbfs_common, superblock::DbfsSuperBlock};
 use crate::{
     clone_db,
-    common::{generate_data_key, generate_data_key_with_number, DbfsAttr,
-        DbfsFileType, DbfsPermission, DbfsResult, DbfsTimeSpec as DbfsTs, RENAME_EXCHANGE,
-    },
-    file::{dbfs_common_read, dbfs_common_write},
-    inode::{
-        checkout_access, dbfs_common_attr, dbfs_common_create, dbfs_common_link,
-        dbfs_common_lookup, dbfs_common_rename, dbfs_common_rmdir, dbfs_common_truncate,
-        permission_from_mode, DBFS_INODE_NUMBER,
-    },
-    link::{dbfs_common_readlink, dbfs_common_unlink},
-    u16, u32, u64, usize, SLICE_SIZE,
-    // 宏在根级别
-    dbfs_time_spec,
+    common::{DbfsFileType, DbfsPermission, DbfsTimeSpec as DbfsTs},
+    u16, u32, u64, usize,
 };
 
 /// DBFS Inode structure
@@ -198,7 +187,7 @@ impl VfsFile for DbfsInode {
             return Err(VfsError::NoSys);
         }
 
-        dbfs_common_read(self.ino, buf, offset)
+        dbfs_common::dbfs_read(self.ino, buf, offset)
             .map_err(|_| VfsError::IoError)
     }
 
@@ -207,7 +196,7 @@ impl VfsFile for DbfsInode {
             return Err(VfsError::NoSys);
         }
 
-        dbfs_common_write(self.ino, buf, offset)
+        dbfs_common::dbfs_write(self.ino, buf, offset)
             .map_err(|_| VfsError::IoError)
             .map(|len| {
                 // Update size
@@ -303,7 +292,7 @@ impl VfsInode for DbfsInode {
             None
         };
 
-        let attr = dbfs_common_create(
+        let attr = dbfs_common::dbfs_create(
             self.ino,
             name,
             0,
@@ -353,7 +342,7 @@ impl VfsInode for DbfsInode {
         let src_dbfs = src.downcast_arc::<DbfsInode>().map_err(|_| VfsError::Invalid)?;
 
         let ctime = Self::current_time();
-        dbfs_common_link(0, 0, src_dbfs.ino, self.ino, name, ctime).map_err(|_| VfsError::IoError)?;
+        dbfs_common::dbfs_link(0, 0, src_dbfs.ino, self.ino, name, ctime).map_err(|_| VfsError::IoError)?;
 
         // Update link count
         *src_dbfs.nlink.lock() += 1;
@@ -367,7 +356,7 @@ impl VfsInode for DbfsInode {
         }
 
         let ctime = Self::current_time();
-        dbfs_common_unlink(0, 0, self.ino, name, None, ctime).map_err(|_| VfsError::IoError)?;
+        dbfs_common::dbfs_unlink(0, 0, self.ino, name, None, ctime).map_err(|_| VfsError::IoError)?;
 
         Ok(())
     }
@@ -381,7 +370,7 @@ impl VfsInode for DbfsInode {
         perm |= DbfsPermission::from_bits_truncate(0o777);
 
         let ctime = Self::current_time();
-        let attr = dbfs_common_create(
+        let attr = dbfs_common::dbfs_create(
             self.ino,
             name,
             0,
@@ -413,7 +402,7 @@ impl VfsInode for DbfsInode {
             return Err(VfsError::NotDir);
         }
 
-        let attr = dbfs_common_lookup(self.ino, name).map_err(|_| VfsError::NoEntry)?;
+        let attr = dbfs_common::dbfs_lookup(self.ino, name).map_err(|_| VfsError::NoEntry)?;
 
         // Check if inode is already cached
         if let Some(cached) = self.sb.get_inode(attr.ino) {
@@ -440,7 +429,7 @@ impl VfsInode for DbfsInode {
             )?,
             DbfsFileType::Symlink => {
                 let mut target = [0u8; 4096];
-                let len = dbfs_common_readlink(attr.ino, &mut target).map_err(|_| VfsError::IoError)?;
+                let len = dbfs_common::dbfs_readlink(attr.ino, &mut target).map_err(|_| VfsError::IoError)?;
                 let target_str = core::str::from_utf8(&target[..len])
                     .map_err(|_| VfsError::Invalid)?
                     .to_string();
@@ -469,7 +458,7 @@ impl VfsInode for DbfsInode {
         }
 
         let ctime = Self::current_time();
-        dbfs_common_rmdir(0, 0, self.ino, name, ctime).map_err(|e| match e {
+        dbfs_common::dbfs_rmdir(0, 0, self.ino, name, ctime).map_err(|e| match e {
             crate::common::DbfsError::NotEmpty => VfsError::NotEmpty,
             _ => VfsError::IoError,
         })?;
@@ -573,7 +562,7 @@ impl VfsInode for DbfsInode {
         }
 
         let ctime = Self::current_time();
-        dbfs_common_truncate(0, 0, self.ino, ctime, len as usize)
+        dbfs_common::dbfs_truncate(0, 0, self.ino, ctime, len as usize)
             .map_err(|_| VfsError::IoError)?;
 
         *self.size.lock() = len as usize;
@@ -593,7 +582,7 @@ impl VfsInode for DbfsInode {
             .map_err(|_| VfsError::Invalid)?;
 
         let ctime = Self::current_time();
-        dbfs_common_rename(
+        dbfs_common::dbfs_rename(
             0,
             0,
             self.ino,

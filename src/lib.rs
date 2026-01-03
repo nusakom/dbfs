@@ -1,11 +1,34 @@
 #![feature(error_in_core)]
 #![cfg_attr(not(test), no_std)]
-#![feature(error_in_core)]
 extern crate alloc;
 
+// Common modules (no VFS dependency)
+#[cfg(feature = "rvfs")]
+mod attr;
+mod common;
+mod inode_common;
+#[cfg(feature = "rvfs")]
+mod link;
+
+// New RVFS2 support
+#[cfg(feature = "rvfs2")]
+pub mod rvfs2;
+
+// RVFS2 Demo - Minimal proof of concept
+#[cfg(feature = "rvfs2")]
+pub mod rvfs2_demo;
+
+// Common DBFS functions for both old and new RVFS
+mod fs_common;
+
+// Old RVFS modules (only compile when rvfs feature is available)
+#[cfg(feature = "rvfs")]
 mod dir;
+#[cfg(feature = "rvfs")]
 mod file;
+#[cfg(feature = "rvfs")]
 mod fs_type;
+#[cfg(feature = "rvfs")]
 mod inode;
 
 use alloc::{alloc::alloc, sync::Arc};
@@ -15,7 +38,10 @@ use core::{
 };
 
 use buddy_system_allocator::LockedHeap;
+
+#[cfg(feature = "rvfs")]
 pub use fs_type::DBFS;
+
 use jammdb::DB;
 use log::error;
 use spin::Once;
@@ -45,13 +71,6 @@ pub mod fuse;
 
 #[cfg(feature = "fuse")]
 extern crate std;
-
-#[cfg(feature = "rvfs2")]
-pub mod rvfs2;
-
-mod attr;
-mod common;
-mod link;
 
 struct SafeDb(DB);
 

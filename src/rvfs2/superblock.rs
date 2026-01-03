@@ -7,7 +7,7 @@ use vfscore::{
     VfsResult,
 };
 
-use crate::{clone_db, common::DbfsTimeSpec, inode::DBFS_INODE_NUMBER};
+use crate::{clone_db, common::DbfsTimeSpec, fs_common, inode_common::DBFS_INODE_NUMBER};
 
 /// DBFS SuperBlock structure
 pub struct DbfsSuperBlock {
@@ -123,10 +123,12 @@ impl VfsSuperBlock for DbfsSuperBlock {
     }
 
     fn stat_fs(&self) -> VfsResult<VfsFsStat> {
-        let _stat = crate::fs_type::dbfs_common_statfs(
-            Some(self.block_size),
-            Some(self.magic),
-            Some(self.mount_flags as u64),
+        let _stat = fs_common::dbfs_common_statfs(
+            self.block_size as u64,
+            self.magic as u64,
+            self.mount_flags as u64,
+            0,
+            self.block_size,
         )
         .map_err(|_| vfscore::error::VfsError::IoError)?;
 

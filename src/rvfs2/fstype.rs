@@ -11,7 +11,7 @@ use vfscore::{
 };
 
 use super::{dentry::DbfsDentry, inode::DbfsInode, superblock::DbfsSuperBlock};
-use crate::{clone_db, common::DbfsTimeSpec};
+use crate::{clone_db, common::DbfsTimeSpec, fs_common};
 
 /// DBFS Filesystem Type
 pub struct DbfsFsType {
@@ -41,7 +41,7 @@ impl VfsFsType for DbfsFsType {
 
         // Initialize root inode if needed
         let ctime = DbfsTimeSpec::default();
-        crate::fs_type::dbfs_common_root_inode(0, 0, ctime).map_err(|_| VfsError::IoError)?;
+        fs_common::dbfs_common_root_inode(0, 0, ctime).map_err(|_| VfsError::IoError)?;
 
         // Get superblock metadata
         let tx = db.tx(false).map_err(|_| VfsError::IoError)?;
@@ -79,7 +79,7 @@ impl VfsFsType for DbfsFsType {
         sb.sync_fs(true)?;
 
         // Call common umount
-        crate::fs_type::dbfs_common_umount().map_err(|_| VfsError::IoError)?;
+        crate::fs_common::dbfs_common_umount().map_err(|_| VfsError::IoError)?;
 
         Ok(())
     }

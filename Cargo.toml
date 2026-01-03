@@ -43,6 +43,7 @@ log = "0.4.17"
 default = ["sli32k"]
 # rvfs = ["dep:rvfs"]  # Not currently available
 rvfs2 = ["dep:vfscore"]
+rvfs2_demo = ["dep:vfscore"]
 fuse = [
     "rand",
     "fuser",
