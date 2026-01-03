@@ -19,7 +19,10 @@ pub use fs_type::DBFS;
 use jammdb::DB;
 use log::error;
 use spin::Once;
+
+#[cfg(feature = "dbop")]
 pub mod extend;
+
 pub mod models;
 pub mod log_manager;
 pub mod tx_engine;
