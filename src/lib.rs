@@ -23,6 +23,9 @@ pub mod rvfs2_demo;
 pub mod alien_integration;
 
 // Common DBFS functions for both old and new RVFS
+#[cfg(feature = "rvfs")]
+mod common;
+
 mod fs_common;
 
 // Old RVFS modules (only compile when rvfs feature is available)
