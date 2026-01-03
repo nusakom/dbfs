@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![feature(error_in_core)]
 extern crate alloc;
 
 mod dir;
@@ -26,6 +27,9 @@ pub mod fuse;
 
 #[cfg(feature = "fuse")]
 extern crate std;
+
+#[cfg(feature = "rvfs2")]
+pub mod rvfs2;
 
 mod attr;
 mod common;

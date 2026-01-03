@@ -6,7 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rvfs = { git = "https://github.com/Godones/rvfs.git" }
+# Old RVFS (for backward compatibility) - Godones/rvfs
+rvfs = { git = "https://github.com/Godones/rvfs.git", optional = true }
+
+# New RVFS (vfscore) - os-module/rvfs workspace
+# 注意：os-module/rvfs 是一个 workspace，包含 vfscore 子包
+vfscore = { git = "https://github.com/os-module/rvfs.git", package = "vfscore", optional = true }
+
 jammdb = { git = "https://github.com/Godones/jammdb" }
 #jammdb = {path = "../jammdb"}
 
@@ -28,7 +34,8 @@ log = "0.4.17"
 
 [features]
 default = ["rvfs", "sli32k"]
-rvfs = []
+rvfs = ["dep:rvfs"]
+rvfs2 = ["dep:vfscore"]
 fuse = [
     "rand",
     "fuser",
