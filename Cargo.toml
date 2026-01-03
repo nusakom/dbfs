@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Old RVFS (for backward compatibility) - nusakom/rvfs
-rvfs = { git = "ssh://git@github.com/nusakom/rvfs.git", optional = true }
+# Old RVFS (for backward compatibility) - not currently available
+# rvfs = { git = "ssh://git@github.com/nusakom/rvfs.git", optional = true }
 
 # New RVFS (vfscore) - os-module/rvfs workspace
 # 注意 os-module/rvfs 是一个 workspace，包含 vfscore 子包
@@ -38,8 +38,8 @@ serde = { version = "1.0.136", default-features = false, features = [
 log = "0.4.17"
 
 [features]
-default = ["rvfs", "sli32k"]
-rvfs = ["dep:rvfs"]
+default = ["sli32k"]
+# rvfs = ["dep:rvfs"]  # Not currently available
 rvfs2 = ["dep:vfscore"]
 fuse = [
     "rand",
@@ -64,7 +64,7 @@ sli32k = []
 env_logger = "0.9.0"
 dbfs2 = { path = ".", default-features = false, features = [
     "fuse",
-    "rvfs",
+    "rvfs2",
     "sli32k",
 ] }
 clap = { version = "4.2.1", features = ["cargo", "derive"] }
