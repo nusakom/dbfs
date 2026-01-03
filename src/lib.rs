@@ -15,8 +15,12 @@ mod link;
 pub mod rvfs2;
 
 // RVFS2 Demo - Minimal proof of concept
-#[cfg(feature = "rvfs2")]
+#[cfg(feature = "rvfs2_demo")]
 pub mod rvfs2_demo;
+
+// Alien Integration - Phase 1: Basic filesystem (no transactions)
+#[cfg(feature = "alien_integration")]
+pub mod alien_integration;
 
 // Common DBFS functions for both old and new RVFS
 mod fs_common;

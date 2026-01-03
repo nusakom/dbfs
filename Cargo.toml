@@ -44,6 +44,7 @@ default = ["sli32k"]
 # rvfs = ["dep:rvfs"]  # Not currently available
 rvfs2 = ["dep:vfscore"]
 rvfs2_demo = ["dep:vfscore"]
+alien_integration = ["dep:vfscore"]  # Phase 1: Basic filesystem for Alien OS
 fuse = [
     "rand",
     "fuser",
