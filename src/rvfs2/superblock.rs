@@ -23,6 +23,8 @@ pub struct DbfsSuperBlock {
     mount_flags: u32,
     /// Inode cache (inode_number -> Arc<DbfsInode>)
     inode_cache: Mutex<BTreeMap<usize, Arc<super::inode::DbfsInode>>>,
+    /// Transaction manager
+    pub tm: Arc<crate::transaction::TransactionManager>,
 }
 
 impl DbfsSuperBlock {
@@ -32,6 +34,7 @@ impl DbfsSuperBlock {
         block_size: u32,
         magic: u32,
         mount_flags: u32,
+        tm: Arc<crate::transaction::TransactionManager>,
     ) -> VfsResult<Self> {
         let db_clone = db.clone();
         let tx = db_clone.tx(false).map_err(|_| vfscore::error::VfsError::IoError)?;
@@ -62,6 +65,7 @@ impl DbfsSuperBlock {
             root_ino: 1, // Root inode is always 1
             mount_flags,
             inode_cache: Mutex::new(BTreeMap::new()),
+            tm,
         })
     }
 
@@ -189,6 +193,7 @@ impl Clone for DbfsSuperBlock {
             root_ino: self.root_ino,
             mount_flags: self.mount_flags,
             inode_cache: Mutex::new(self.inode_cache.lock().clone()),
+            tm: self.tm.clone(),
         }
     }
 }

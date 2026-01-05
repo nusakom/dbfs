@@ -22,6 +22,14 @@ pub mod rvfs2_demo;
 #[cfg(feature = "alien_integration")]
 pub mod alien_integration;
 
+// DBFS Transactional Core
+pub mod operation;
+pub mod wal;
+pub mod transaction;
+
+#[cfg(test)]
+mod dbfs_test;
+
 // Common DBFS functions for both old and new RVFS
 #[cfg(feature = "rvfs")]
 mod common;

@@ -17,12 +17,17 @@ use crate::{clone_db, common::DbfsTimeSpec, fs_common};
 pub struct DbfsFsType {
     /// Database path
     db_path: String,
+    /// Transaction manager
+    pub tm: Arc<crate::transaction::TransactionManager>,
 }
 
 impl DbfsFsType {
     /// Create a new DBFS filesystem type
     pub fn new(db_path: String) -> Self {
-        Self { db_path }
+        Self {
+            db_path,
+            tm: Arc::new(crate::transaction::TransactionManager::new()),
+        }
     }
 }
 
@@ -35,6 +40,15 @@ impl VfsFsType for DbfsFsType {
         _data: &[u8],
     ) -> VfsResult<Arc<dyn VfsDentry>> {
         info!("Mounting DBFS from {}", self.db_path);
+
+        // Set up WAL storage if a device (Bottom FS) is provided
+        if let Some(ref dev) = _dev {
+            let wal_inode = dev.create(".dbfs.wal", VfsNodeType::File, VfsNodePerm::from_bits_truncate(0o644), None)
+                .map_err(|_| VfsError::IoError)?;
+            let storage = Arc::new(super::VfsWalStorage::new(wal_inode));
+            self.tm.set_wal_storage(storage);
+            info!("WAL storage initialized on Bottom FS");
+        }
 
         // Open database
         let db = clone_db();
@@ -61,7 +75,7 @@ impl VfsFsType for DbfsFsType {
         drop(tx);
 
         // Create superblock
-        let sb = Arc::new(DbfsSuperBlock::new(db, blk_size, magic, 0)?) as Arc<dyn vfscore::superblock::VfsSuperBlock>;
+        let sb = Arc::new(DbfsSuperBlock::new(db, blk_size, magic, 0, self.tm.clone())?) as Arc<dyn vfscore::superblock::VfsSuperBlock>;
 
         // Get root inode
         let root_inode = sb.root_inode()?;

@@ -187,6 +187,9 @@ impl VfsFile for DbfsInode {
             return Err(VfsError::NoSys);
         }
 
+        // Acquire read lock to ensure we're not reading while a commit is applying changes
+        let _guard = self.sb.tm.state_lock.read();
+
         dbfs_common::dbfs_read(self.ino, buf, offset)
             .map_err(|_| VfsError::IoError)
     }
@@ -196,20 +199,33 @@ impl VfsFile for DbfsInode {
             return Err(VfsError::NoSys);
         }
 
-        dbfs_common::dbfs_write(self.ino, buf, offset)
-            .map_err(|_| VfsError::IoError)
-            .map(|len| {
-                // Update size
-                let new_size = (offset as usize + len).max(*self.size.lock());
-                *self.size.lock() = new_size;
-                len
-            })
+        use crate::operation::TransactionOperation;
+
+        let mut txn = self.sb.tm.begin_transaction();
+        txn.record(TransactionOperation::Write {
+            ino: self.ino,
+            offset,
+            data: buf.to_vec(),
+        });
+
+        self.sb.tm.commit(txn).map_err(|e| {
+            log::error!("Transaction commit failed: {}", e);
+            VfsError::IoError
+        })?;
+
+        // Update size in memory cache
+        let len = buf.len();
+        let new_size = (offset as usize + len).max(*self.size.lock());
+        *self.size.lock() = new_size;
+        Ok(len)
     }
 
     fn readdir(&self, start_index: usize) -> VfsResult<Option<VfsDirEntry>> {
         if self.inode_type != VfsNodeType::Dir {
             return Err(VfsError::NotDir);
         }
+
+        let _guard = self.sb.tm.state_lock.read();
 
         let db = self.sb.db();
         let tx = db.tx(false).map_err(|_| VfsError::IoError)?;
@@ -292,17 +308,25 @@ impl VfsInode for DbfsInode {
             None
         };
 
-        let attr = dbfs_common::dbfs_create(
-            self.ino,
-            name,
-            0,
-            0,
-            ctime,
-            dbfs_perm,
-            None, // No symlink target
-            dev,
-        )
-        .map_err(|_| VfsError::IoError)?;
+        use crate::operation::TransactionOperation;
+
+        let mut txn = self.sb.tm.begin_transaction();
+        txn.record(TransactionOperation::Create {
+            parent_ino: self.ino,
+            name: name.to_string(),
+            uid: 0, // Default for now
+            gid: 0,
+            perm: dbfs_perm.bits(),
+            dev: dev,
+        });
+
+        self.sb.tm.commit(txn).map_err(|e| {
+            log::error!("Create transaction failed: {}", e);
+            VfsError::IoError
+        })?;
+
+        // After commit, the inode should exist. Look it up to return it.
+        let attr = dbfs_common::dbfs_lookup(self.ino, name).map_err(|_| VfsError::IoError)?;
 
         // Create the new inode
         let new_inode = match ty {
@@ -355,8 +379,18 @@ impl VfsInode for DbfsInode {
             return Err(VfsError::NotDir);
         }
 
-        let ctime = Self::current_time();
-        dbfs_common::dbfs_unlink(0, 0, self.ino, name, None, ctime).map_err(|_| VfsError::IoError)?;
+        use crate::operation::TransactionOperation;
+
+        let mut txn = self.sb.tm.begin_transaction();
+        txn.record(TransactionOperation::Delete {
+            parent_ino: self.ino,
+            name: name.to_string(),
+        });
+
+        self.sb.tm.commit(txn).map_err(|e| {
+            log::error!("Unlink transaction failed: {}", e);
+            VfsError::IoError
+        })?;
 
         Ok(())
     }
@@ -401,6 +435,8 @@ impl VfsInode for DbfsInode {
         if self.inode_type != VfsNodeType::Dir {
             return Err(VfsError::NotDir);
         }
+
+        let _guard = self.sb.tm.state_lock.read();
 
         let attr = dbfs_common::dbfs_lookup(self.ino, name).map_err(|_| VfsError::NoEntry)?;
 
@@ -502,6 +538,7 @@ impl VfsInode for DbfsInode {
     }
 
     fn get_attr(&self) -> VfsResult<vfscore::utils::VfsFileStat> {
+        let _guard = self.sb.tm.state_lock.read();
         let attr = dbfs_common_attr(self.ino).map_err(|_| VfsError::IoError)?;
 
         let mode = VfsInodeMode::from(
@@ -561,9 +598,17 @@ impl VfsInode for DbfsInode {
             return Err(VfsError::NoSys);
         }
 
-        let ctime = Self::current_time();
-        dbfs_common::dbfs_truncate(0, 0, self.ino, ctime, len as usize)
-            .map_err(|_| VfsError::IoError)?;
+        use crate::operation::TransactionOperation;
+        let mut txn = self.sb.tm.begin_transaction();
+        txn.record(TransactionOperation::Truncate {
+            ino: self.ino,
+            length: len,
+        });
+
+        self.sb.tm.commit(txn).map_err(|e| {
+            log::error!("Truncate transaction failed: {}", e);
+            VfsError::IoError
+        })?;
 
         *self.size.lock() = len as usize;
 
@@ -581,18 +626,19 @@ impl VfsInode for DbfsInode {
             .downcast_arc::<DbfsInode>()
             .map_err(|_| VfsError::Invalid)?;
 
-        let ctime = Self::current_time();
-        dbfs_common::dbfs_rename(
-            0,
-            0,
-            self.ino,
-            old_name,
-            new_parent_dbfs.ino,
-            new_name,
-            flag.bits() as u32,
-            ctime,
-        )
-        .map_err(|_| VfsError::IoError)?;
+        use crate::operation::TransactionOperation;
+        let mut txn = self.sb.tm.begin_transaction();
+        txn.record(TransactionOperation::Rename {
+            old_parent_ino: self.ino,
+            old_name: old_name.to_string(),
+            new_parent_ino: new_parent_dbfs.ino,
+            new_name: new_name.to_string(),
+        });
+
+        self.sb.tm.commit(txn).map_err(|e| {
+            log::error!("Rename transaction failed: {}", e);
+            VfsError::IoError
+        })?;
 
         Ok(())
     }
