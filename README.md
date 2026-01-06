@@ -464,6 +464,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
   **Built with Rust**
 
-  **[⭐ Star on GitHub!](https://github.com/Godones/dbfs2)**
-
 </div>
