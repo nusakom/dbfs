@@ -133,6 +133,7 @@ Measured on FUSE user-space mode (compared to ext4):
 ## System Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Application Layer                           │
 │  ┌──────────────────────┐  ┌─────────────────────────────────┐ │
